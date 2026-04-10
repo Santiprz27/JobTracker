@@ -4,49 +4,44 @@ from dotenv import load_dotenv
 from groq import Groq
 
 def analizar_mercado():
-    print("Cargando...")
+    print("\n¡Ahora vamos con la parte inteligente! Estoy despertando al analista...")
     
-    # 1. Carga de configuración
     load_dotenv()
     api_key = os.getenv("GROQ_API_KEY")
-
+    
     if not api_key:
-        print("🔑 No se encontró la API Key de Groq.")
-        api_key = input("Por favor, ingresa tu Groq API Key: ").strip()
-        
-        # Guardamos la key en un .env para la próxima vez
+        print("\nOye, parece que no encontré tu llave de Groq.")
+        api_key = input("¿Podrías pegarla aquí para que pueda trabajar?: ").strip()
         with open(".env", "a") as f:
             f.write(f"\nGROQ_API_KEY={api_key}")
-        print("✅ Key guardada en el archivo .env para futuros usos.")
+        print("¡Genial! Ya la guardé para que no tengas que ponerla la próxima vez.")
 
     client = Groq(api_key=api_key)
 
-    # 2. Carga de Datos
     try:
         df = pd.read_csv("ofertas_detalladas.csv")
     except FileNotFoundError:
-        print("Error: No se encontró 'ofertas_detalladas.csv'.")
+        print("\nUy, parece que todavía no tienes el archivo de ofertas. Primero corre el recolector de datos.")
         return
 
-    # 3. Preparación de Datos (Truncamos para no exceder límites de tokens)
     texto_jobs = ""
     for _, fila in df.head(15).iterrows():
-        # Tomamos solo los primeros 1000 caracteres de cada descripción
         desc_limpia = str(fila['Descripción'])[:1000]
-        texto_jobs += f"\nPUESTO: {fila['Título']}\n📝 DETALLE: {desc_limpia}\n"
+        texto_jobs += f"\n📌 PUESTO: {fila['Título']}\n📝 DETALLE: {desc_limpia}\n"
 
-    # 4. Consulta a la IA
     prompt = f"""
     Eres un experto en el mercado laboral tecnológico. Analiza esta lista de empleos:
     {texto_jobs}
     
-    Por favor, responde de forma concisa:
-    1. Top 3-5 habilidades técnicas más demandadas.
-    2. Nivel de experiencia dominante.
-    3. Breve consejo estratégico para candidatos.
-    4. sueldo si es mencionado
+    Por favor, responde de forma amigable y concisa:
+    1. ¿Cuáles son las 3-5 habilidades técnicas más pedidas?
+    2. ¿Qué nivel de experiencia están buscando generalmente?
+    3. Un consejo estratégico para quienes quieran aplicar.
+    4. ¿Se menciona algo sobre el sueldo?
     """
 
+    print("Le estoy preguntando a la IA qué opina sobre estos trabajos. Dame unos segundos...")
+    
     try:
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -54,15 +49,15 @@ def analizar_mercado():
             temperature=0.4
         )
         
-        # 5. Visualización de Resultados
         print("\n" + "═"*50)
-        print("RESUMEN ESTRATÉGICO DE MERCADO")
+        print("              LO QUE DESCUBRÍ PARA TI")
         print("═"*50)
         print(completion.choices[0].message.content)
         print("═"*50)
+        print("\n¡Espero que esta información te sirva para conseguir ese puesto!")
 
-    except Exception as e:
-        print(f"Error al consultar Groq: {e}")
+    except Exception:
+        print("\nTuve un pequeño problema al hablar con la IA. Revisa tu conexión o tu API Key.")
 
 if __name__ == "__main__":
     analizar_mercado()
